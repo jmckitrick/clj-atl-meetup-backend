@@ -3,7 +3,10 @@
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
 
-  :dependencies [[clojure.java-time "0.3.2"]
+  :dependencies [[cheshire "5.8.1"]
+                 [clj-http-lite "0.3.0"]
+                 [com.bhauman/rebel-readline "0.1.4"]
+                 [clojure.java-time "0.3.2"]
                  [com.fasterxml.jackson.core/jackson-core "2.9.7"]
                  [com.fasterxml.jackson.datatype/jackson-datatype-jdk8 "2.6.3"]
                  [compojure "1.6.1"]
@@ -32,7 +35,7 @@
                  [selmer "1.12.1"]]
 
   :min-lein-version "2.0.0"
-  
+
   :source-paths ["src/clj"]
   :test-paths ["test/clj"]
   :resource-paths ["resources"]
@@ -58,7 +61,7 @@
                                  [ring/ring-devel "1.7.0"]
                                  [ring/ring-mock "0.3.2"]]
                   :plugins      [[com.jakemccrary/lein-test-refresh "0.23.0"]]
-                  
+
                   :source-paths ["env/dev/clj"]
                   :resource-paths ["env/dev/resources"]
                   :repl-options {:init-ns user}
