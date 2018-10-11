@@ -6,15 +6,27 @@
             [compojure.api.sweet :refer :all]
             [schema.core :as s]))
 
-(def my-distance {:destination_addresses
- ["1535 Lake Paradise Rd, Villa Rica, GA 30180, USA"],
- :origin_addresses ["2210 Ashton Dr, Villa Rica, GA 30180, USA"],
- :rows
- [{:elements
-   [{:distance {:text "20.6 km", :value 20604},
-     :duration {:text "23 mins", :value 1364},
-     :status "OK"}]}],
- :status "OK"})
+
+(def my-distance
+  {:destination_addresses
+   ["101 W Chapel Hill St #300, Durham, NC 27701, USA"],
+   :origin_addresses
+   ["17 Executive Park Dr NE, Atlanta, GA 30329, USA"],
+   :rows
+   [{:elements
+     [{:distance {:text "600 km", :value 600437},
+       :duration {:text "5 hours 34 mins", :value 20055},
+       :status "OK"}]}],
+   :status "OK"}
+  #_{:destination_addresses
+   ["1535 Lake Paradise Rd, Villa Rica, GA 30180, USA"],
+   :origin_addresses ["2210 Ashton Dr, Villa Rica, GA 30180, USA"],
+   :rows
+   [{:elements
+     [{:distance {:text "20.6 km", :value 20604},
+       :duration {:text "23 mins", :value 1364},
+       :status "OK"}]}],
+   :status "OK"})
 
 
 (def show-db-debug-info (atom true))
@@ -32,6 +44,7 @@
          (println (str "---> next exception " (.getNextException e#))))
        (throw e#))))
 
+
 (def distance-api
   "Google Maps API.
 See: https://developers.google.com/maps/documentation/distance-matrix/intro
@@ -47,20 +60,36 @@ See: https://developers.google.com/maps/documentation/distance-matrix/intro
     (with-log
       (http/get (str distance-api "&origins=" start "&destinations=" end)))))
 
-(defn get-distance-response [start end]
-  (let [response (get-travel-distance start end)
-        main-result (-> response
+(defn get-distance-response
+  ([]
+   ;;(get-distance-response "2210 ashton dr, villa rica, ga, 30180" "1535 lake paradise rd, villa rica, ga, 30180")
+   (get-distance-response my-distance))
+  ([pre-result]
+   (let [main-result (-> pre-result
+                         (get :rows)
+                         first
+                         (get :elements)
+                         first)
+         travel-time (-> main-result
+                         (get :duration)
+                         (get :text))
+         status (get main-result :status)]
+     travel-time))
+  ([start end]
+   (let [response (get-travel-distance start end)
+         pre-result (-> response
                         :body
-                        (json/parse-string true)
-                        (get :rows)
-                        first
-                        (get :elements)
-                        first)
-        travel-time (-> main-result
-                        (get :duration)
-                        (get :text))
-        status (get main-result :status)]
-    travel-time))
+                        (json/parse-string true))
+         main-result (-> pre-result
+                         (get :rows)
+                         first
+                         (get :elements)
+                         first)
+         travel-time (-> main-result
+                         (get :duration)
+                         (get :text))
+         status (get main-result :status)]
+     travel-time)))
 
 
 (defapi service-routes
@@ -75,7 +104,13 @@ See: https://developers.google.com/maps/documentation/distance-matrix/intro
       :return String
       :query-params [start :- String, end :- String]
       :summary "Start and end addresses with comma-separated fields"
-      (get-distance-response "2210 ashton dr, villa rica, ga, 30180" "1535 lake paradise rd, villa rica, ga, 30180")))
+      (-> (get-distance-response start end)
+          ring.util.response/response
+          (ring.util.http-response/header "Access-Control-Allow-Origin" "*"))
+
+
+      ;;(get-distance-response)
+      ))
 
   (comment
     (context "/api" []
