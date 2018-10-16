@@ -4,9 +4,63 @@
             [clj-http.lite.client :as http]
             [clojure.string :as string]
             [compojure.api.sweet :refer :all]
-            [schema.core :as s]))
+            [schema.core :as s]
+            [clj-atl-meetup-backend.config :refer [env]]))
 
 
+(def show-db-debug-info (atom true))
+
+
+(defmacro with-log
+  "Catch and log exceptions."
+  [& body]
+  `(try
+     ~@body
+     (catch Exception e#
+       (when @show-db-debug-info
+         (println (str "---> exception " e#))
+         (println (str "---> stack trace " (.printStackTrace e#)))
+         (println (str "---> next exception " (.getNextException e#))))
+       (throw e#))))
+
+
+
+
+
+
+
+(def distance-api
+  "Google Maps API.
+See: https://developers.google.com/maps/documentation/distance-matrix/intro
+#DistanceMatrixRequests"
+  ;; Move key to env.
+  #_(str "https://maps.googleapis.com/maps/api/distancematrix/json"
+       "?key=AIzaSyAu8SYl9_90jSuvy6L47M5xkWvmnMsoMJo")
+  (str "https://maps.googleapis.com/maps/api/distancematrix/json"
+       "?key=" (-> env :api-key)))
+
+
+(defn get-travel-distance [starting-address ending-address]
+  (let [start (string/replace starting-address #" " "+")
+        end (string/replace ending-address #" " "+")]
+    (with-log
+      (http/get (str distance-api "&origins=" start "&destinations=" end)))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 (def my-distance
   {:destination_addresses
    ["101 W Chapel Hill St #300, Durham, NC 27701"],
@@ -29,37 +83,14 @@
    :status "OK"})
 
 
-(def show-db-debug-info (atom true))
 
 
-(defmacro with-log
-  "Catch and log exceptions."
-  [& body]
-  `(try
-     ~@body
-     (catch Exception e#
-       (when @show-db-debug-info
-         (println (str "---> exception " e#))
-         (println (str "---> stack trace " (.printStackTrace e#)))
-         (println (str "---> next exception " (.getNextException e#))))
-       (throw e#))))
 
 
-(def distance-api
-  "Google Maps API.
-See: https://developers.google.com/maps/documentation/distance-matrix/intro
-#DistanceMatrixRequests"
-  ;; Move key to env.
-  (str "https://maps.googleapis.com/maps/api/distancematrix/json"
-       "?key=AIzaSyAu8SYl9_90jSuvy6L47M5xkWvmnMsoMJo"))
 
 
-(defn get-travel-distance [starting-address ending-address]
-  (let [start (string/replace starting-address #" " "+")
-        end (string/replace ending-address #" " "+")]
-    (with-log
-      (http/get (str distance-api "&origins=" start "&destinations=" end)))))
 
+
 (defn get-distance-response
   ([]
    ;;(get-distance-response "2210 ashton dr, villa rica, ga, 30180" "1535 lake paradise rd, villa rica, ga, 30180")
@@ -107,8 +138,6 @@ See: https://developers.google.com/maps/documentation/distance-matrix/intro
       (-> (get-distance-response start end)
           ring.util.response/response
           (ring.util.http-response/header "Access-Control-Allow-Origin" "*"))
-
-
       ;;(get-distance-response)
       )
     )
