@@ -34,7 +34,9 @@
        "?key=" (-> env :api-key)))
 
 
-(defn get-travel-distance [starting-address ending-address]
+(defn get-distance-api
+  "Call Google API with 2 addresses and return distance between."
+  [starting-address ending-address]
   (println starting-address ending-address)
   (let [start (string/replace starting-address #" " "+")
         end (string/replace ending-address #" " "+")
@@ -100,7 +102,8 @@
   (-> result :rows first :elements first :duration :text))
 
 (defn get-distance-response [start end]
-  (let [result (get-travel-distance start end)]
+  (let [result (get-distance-api start end)]
+    (println "Response" result)
     (-> result :rows first :elements first :duration :text)))
 
 

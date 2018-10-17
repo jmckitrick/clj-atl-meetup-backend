@@ -44,6 +44,7 @@
 
   :plugins [[lein-immutant "2.1.0"]]
 
+  :aliases {"rebl" ["trampoline" "run" "-m" "rebel-readline.main"]}
   :profiles
   {:uberjar {:omit-source true
              :aot :all
