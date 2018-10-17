@@ -29,16 +29,21 @@
 
 
 
-(def distance-api
+(defn distance-api []
   (str "https://maps.googleapis.com/maps/api/distancematrix/json"
        "?key=" (-> env :api-key)))
 
 
 (defn get-travel-distance [starting-address ending-address]
+  (println starting-address ending-address)
   (let [start (string/replace starting-address #" " "+")
-        end (string/replace ending-address #" " "+")]
+        end (string/replace ending-address #" " "+")
+        url (str (distance-api) "&origins=" start "&destinations=" end)]
     (with-log
-      (http/get (str distance-api "&origins=" start "&destinations=" end)))))
+      ;; json response
+      (println url)
+      #_(http/get url)
+      (-> (http/get url) :body (json/parse-string true)))))
 
 
 
@@ -58,6 +63,15 @@
 
 
 (def my-distance
+  {:destination_addresses ["New York, NY, USA"],
+ :origin_addresses ["Atlanta, GA, USA"],
+ :rows
+ [{:elements
+   [{:distance {:text "1,390 km", :value 1390310},
+     :duration {:text "13 hours 10 mins", :value 47416},
+     :status "OK"}]}],
+   :status "OK"}
+  #_
   {:destination_addresses
    ["101 W Chapel Hill St #300, Durham, NC 27701"],
    :origin_addresses
@@ -77,36 +91,28 @@
 
 
 
+
+
+
+
 
-(defn get-distance-response
-  ([]
-   (get-distance-response my-distance))
-  ([pre-result]
-   (let [main-result (-> pre-result
-                         (get :rows)
-                         first
-                         (get :elements)
-                         first)
-         travel-time (-> main-result
-                         (get :duration)
-                         (get :text))
-         status (get main-result :status)]
-     travel-time))
-  #_([start end]
-   (let [response (get-travel-distance start end)
-         pre-result (-> response
-                        :body
-                        (json/parse-string true))
-         main-result (-> pre-result
-                         (get :rows)
-                         first
-                         (get :elements)
-                         first)
-         travel-time (-> main-result
-                         (get :duration)
-                         (get :text))
-         status (get main-result :status)]
-     travel-time)))
+(defn get-distance-response-exp [result]
+  (-> result :rows first :elements first :duration :text))
+
+(defn get-distance-response [start end]
+  (let [result (get-travel-distance start end)]
+    (-> result :rows first :elements first :duration :text)))
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -135,7 +141,6 @@
       :return String
       :query-params [start :- String, end :- String]
       :summary "Start and end addresses with comma-separated fields"
-      (get-distance-response)
-      #_(-> (get-distance-response start end)
+      (-> (get-distance-response start end)
           ring.util.response/response
           (ring.util.http-response/header "Access-Control-Allow-Origin" "*")))))
